@@ -2,7 +2,7 @@
 
 A thread clone application built using Node.js for the backend and React for the frontend. This project replicates the functionality of a thread-based discussion platform.
 
-**Hosted Link:**
+**Hosted Link:** https://thread-clone-i33s.onrender.com
 
 ## Table of Contents
 
@@ -91,3 +91,12 @@ This application is designed to mimic a thread-based discussion platform where u
 
 - **POST /api/messages** - Post a new message
 - **GET /api/messages/:Id** - Get messages for a specific thread
+
+![image](https://github.com/Avinash01-GIT/Thread_Clone/blob/main/ThreadSS/Tsignup.png)
+![image](https://github.com/Avinash01-GIT/Thread_Clone/blob/main/ThreadSS/Tlogin.png)
+![image](https://github.com/Avinash01-GIT/Thread_Clone/blob/main/ThreadSS/Tfeed.png)
+![image](https://github.com/Avinash01-GIT/Thread_Clone/blob/main/ThreadSS/TChat.png)
+
+## License
+
+This README file provides all the necessary commands and configuration details in Markdown format. Just replace placeholders with your actual project details.
