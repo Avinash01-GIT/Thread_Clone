@@ -20,6 +20,7 @@ import {
   selectedConversationAtom,
 } from "../atoms/messagesAtom";
 import userAtom from "../atoms/userAtom";
+import { useSocket } from "../context/SocketContext";
 
 const ChatPage = () => {
   const showToast = useShowToast();
@@ -31,6 +32,27 @@ const ChatPage = () => {
   const [searchText, setSearchText] = useState("");
   const [searchingUser, setSearchingUser] = useState(false);
   const currentUser = useRecoilValue(userAtom);
+  const { socket, onlineUsers } = useSocket();
+
+  useEffect(() => {
+    socket?.on("messagesSeen", ({ conversationId }) => {
+      setconversations((prev) => {
+        const updatedConversations = prev.map((conversation) => {
+          if (conversation._id === conversationId) {
+            return {
+              ...conversation,
+              lastMessage: {
+                ...conversation.lastMessage,
+                seen: true,
+              },
+            };
+          }
+          return conversation;
+        });
+        return updatedConversations;
+      });
+    });
+  }, [socket, setconversations]);
 
   useEffect(() => {
     const getConversations = async () => {
@@ -59,30 +81,46 @@ const ChatPage = () => {
     try {
       const res = await fetch(`/api/users/profile/${searchText}`);
       const searchedUser = await res.json();
-			if (searchedUser.error) {
-				showToast("Error", searchedUser.error, "error");
-				return;
-			}
+      if (searchedUser.error) {
+        showToast("Error", searchedUser.error, "error");
+        return;
+      }
       const messagingYourself = searchedUser._id === currentUser._id;
-			if (messagingYourself) {
-				showToast("Error", "You cannot message yourself", "error");
-				return;
-			}
+      if (messagingYourself) {
+        showToast("Error", "You cannot message yourself", "error");
+        return;
+      }
 
       const conversationAlreadyExists = conversations.find(
-				(conversation) => conversation.participants[0]._id === searchedUser._id
-			);
+        (conversation) => conversation.participants[0]._id === searchedUser._id
+      );
 
-			if (conversationAlreadyExists) {
-				setSelectedConversation({
-					_id: conversationAlreadyExists._id,
-					userId: searchedUser._id,
-					username: searchedUser.username,
-					userProfilePic: searchedUser.profilePic,
-				});
-				return;
-			}
+      if (conversationAlreadyExists) {
+        setSelectedConversation({
+          _id: conversationAlreadyExists._id,
+          userId: searchedUser._id,
+          username: searchedUser.username,
+          userProfilePic: searchedUser.profilePic,
+        });
+        return;
+      }
 
+      const mockConversation = {
+        mock: true,
+        lastMessage: {
+          text: "",
+          sender: "",
+        },
+        _id: Date.now(),
+        participants: [
+          {
+            _id: searchedUser._id,
+            username: searchedUser.username,
+            profilePic: searchedUser.profilePic,
+          },
+        ],
+      };
+      setconversations((prevConvs) => [...prevConvs, mockConversation]);
     } catch (error) {
       showToast("Error", error.message, "error");
     } finally {
@@ -132,10 +170,14 @@ const ChatPage = () => {
           <form onSubmit={handleConversationSearch}>
             <Flex alignItems={"center"} gap={2}>
               <Input
-                placeholder="Search for a suer"
+                placeholder="Search for a user"
                 onChange={(e) => setSearchText(e.target.value)}
               />
-              <Button size={"sm"} onClick={handleConversationSearch} isLoading={searchingUser}>
+              <Button
+                size={"sm"}
+                onClick={handleConversationSearch}
+                isLoading={searchingUser}
+              >
                 <Search2Icon />
               </Button>
             </Flex>
@@ -163,6 +205,9 @@ const ChatPage = () => {
             conversations.map((conversation) => (
               <Conversation
                 key={conversation._id}
+                isOnline={onlineUsers.includes(
+                  conversation.participants[0]._id
+                )}
                 conversation={conversation}
               />
             ))}
@@ -180,7 +225,7 @@ const ChatPage = () => {
           >
             <GiConversation size={100} />
             <Text fontSize={20}>
-              Seletct a Conversation to start messaging{" "}
+              Seletct a Conversation to start messaging
             </Text>
           </Flex>
         )}

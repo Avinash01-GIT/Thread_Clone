@@ -8,7 +8,7 @@ import { FiLogOut } from "react-icons/fi";
 import useLogOut from "../hooks/useLogOut";
 import authScreenAtom from "../atoms/authAtom";
 import { BsFillChatQuoteFill } from "react-icons/bs";
-
+import { MdOutlineSettings } from "react-icons/md";
 const Header = () => {
   const { colorMode, toggleColorMode } = useColorMode();
   const user = useRecoilValue(userAtom);
@@ -44,6 +44,11 @@ const Header = () => {
           <Link as={RouterLink} to={`/chat`}>
             <BsFillChatQuoteFill size={20} />
           </Link>
+
+          <Link as={RouterLink} to={`/settings`}>
+            <MdOutlineSettings  size={20} />
+          </Link>
+
           <Link as={RouterLink} to={`/${user.username}`}>
             <RxAvatar size={24} />
           </Link>

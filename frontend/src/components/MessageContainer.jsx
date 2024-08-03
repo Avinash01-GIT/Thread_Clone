@@ -10,27 +10,98 @@ import {
 } from "@chakra-ui/react";
 import Message from "./Message";
 import MessageInput from "./MessageInput";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useShowToast from "../hooks/useShowToast";
-import { useRecoilState, useRecoilValue } from "recoil";
-import { selectedConversationAtom } from "../atoms/messagesAtom";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import {
+  conversationsAtom,
+  selectedConversationAtom,
+} from "../atoms/messagesAtom";
 import userAtom from "../atoms/userAtom";
+import { useSocket } from "../context/SocketContext";
+import messageSound from "../assets/sounds/message.mp3";
 
 const MessageContainer = () => {
   const showToast = useShowToast();
-  const [selectedConversation, setSelectedConversation] = useRecoilState(
-    selectedConversationAtom
-  );
+  const selectedConversation = useRecoilValue(selectedConversationAtom);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [messages, setMessages] = useState([]);
   const currentUser = useRecoilValue(userAtom);
+  const { socket } = useSocket();
+  const setconversations = useSetRecoilState(conversationsAtom);
+  const messageEndRef = useRef(null);
 
+  useEffect(() => {
+    socket.on("newMessage", (message) => {
+      if (selectedConversation._id === message.conversation) {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      }
+
+      if(!document.hasFocus()){
+        const sound = new Audio(messageSound);
+        sound.play();
+      }
+      
+      setconversations((prev) => {
+        const updatedConversations = prev.map((conversation) => {
+          if (conversation._id === message.conversationId) {
+            return {
+              ...conversation,
+              lastMessage: {
+                text: message.text,
+                sender: message.sender,
+              },
+            };
+          }
+          return conversation;
+        });
+        return updatedConversations;
+      });
+    });
+    return () => socket.off("newMessage");
+  }, [socket, selectedConversation, setconversations]);
+
+  useEffect(() => {
+    const lastMessageIsFromOtherUser =
+      messages.length &&
+      messages[messages.length - 1].sender !== currentUser._id;
+
+    if (lastMessageIsFromOtherUser) {
+      socket.emit("markMessagesAsSeen", {
+        conversationId: selectedConversation._id,
+        userId: selectedConversation.userId,
+      });
+    }
+
+    socket.on("messagesSeen", ({ conversationId }) => {
+      if (selectedConversation._id === conversationId) {
+        setMessages((prev) => {
+          const updatedMessages = prev.map((message) => {
+            if (!message.seen) {
+              return {
+                ...message,
+                seen: true,
+              };
+            }
+            return message;
+          });
+          return updatedMessages;
+        });
+      }
+    });
+  }, [socket, currentUser._id, messages, selectedConversation]);
+
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     const getMessages = async () => {
       setLoadingMessages(true);
-      setMessages({});
+      setMessages([]);
       try {
+        if (selectedConversation.mock) return;
+
         const res = await fetch(`/api/messages/${selectedConversation.userId}`);
         const data = await res.json();
         if (data.error) {
@@ -45,7 +116,8 @@ const MessageContainer = () => {
       }
     };
     getMessages();
-  }, [showToast, selectedConversation.userId]);
+  }, [showToast, selectedConversation.userId, selectedConversation.mock]);
+
   return (
     <Flex
       flex={70}
@@ -54,7 +126,6 @@ const MessageContainer = () => {
       p={1}
       flexDirection={"column"}
     >
-      
       <Flex w={"full"} h={12} alignItems={"center"} gap={2}>
         <Avatar src={selectedConversation.userProfilePic} size={"sm"} />
         <Text display={"flex"} alignItems={"center"}>
@@ -63,7 +134,7 @@ const MessageContainer = () => {
         </Text>
       </Flex>
       <Divider />
-      
+
       <Flex
         flexDir={"column"}
         gap={4}
@@ -94,11 +165,20 @@ const MessageContainer = () => {
 
         {!loadingMessages &&
           messages.map((message) => (
-            <Message
+            <Flex
               key={message._id}
-              message={message}
-              ownMessage={currentUser._id === message.sender}
-            />
+              direction={"column"}
+              ref={
+                message.length - 1 === messages.indexOf(message)
+                  ? messageEndRef
+                  : null
+              }
+            >
+              <Message
+                message={message}
+                ownMessage={currentUser._id === message.sender}
+              />
+            </Flex>
           ))}
       </Flex>
       <MessageInput setMessages={setMessages} />
