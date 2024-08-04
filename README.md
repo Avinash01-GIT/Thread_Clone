@@ -14,7 +14,6 @@ A thread clone application built using Node.js for the backend and React for the
 - [Running the Project]
 - [API Endpoints]
 - [Frontend]
-- [License]
 
 ## Overview
 
@@ -97,6 +96,12 @@ This application is designed to mimic a thread-based discussion platform where u
 ![image](https://github.com/Avinash01-GIT/Thread_Clone/blob/main/ThreadSS/Tfeed.png)
 ![image](https://github.com/Avinash01-GIT/Thread_Clone/blob/main/ThreadSS/TChat.png)
 
-## License
+## Usage
+Ensure you have MongoDB installed and running. Modify the .env file with your specific configurations before starting the server. Use tools like Postman or curl to interact with the API endpoints.
 
-This README file provides all the necessary commands and configuration details in Markdown format. Just replace placeholders with your actual project details.
+## Contributing
+Contributions are welcome! If you'd like to contribute to this project, please follow these guidelines:
+
+Fork the repository and create a new branch.
+Make your changes and test thoroughly.
+Submit a pull request detailing the changes and improvements made.
